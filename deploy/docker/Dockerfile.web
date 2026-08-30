@@ -5,7 +5,7 @@ RUN npm ci
 COPY src/Atlas.Web/ ./
 RUN npm run build
 
-FROM nginx:1.27-alpine AS final
+FROM nginx:1.31-alpine AS final
 # nginx's entrypoint renders /etc/nginx/templates/*.template with envsubst into conf.d at start.
 ENV ATLAS_API_UPSTREAM=atlas-api:8080
 ENV ATLAS_DNS_RESOLVER=127.0.0.11
