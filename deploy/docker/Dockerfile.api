@@ -1,0 +1,13 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY . .
+RUN dotnet publish src/Atlas.Api -c Release -o /app/publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+# Writable home for the OSV bundle synced by the API (shared volume, worker mounts it read-only).
+RUN mkdir -p /var/atlas/vulndata /var/atlas/uploads && chown app:app /var/atlas/vulndata /var/atlas/uploads
+USER app
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "Atlas.Api.dll"]

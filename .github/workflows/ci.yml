@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+          dotnet-quality: preview
+
+      - name: Restore
+        run: dotnet restore Atlas.slnx
+
+      - name: Build
+        run: dotnet build Atlas.slnx --no-restore -c Release
+
+      - name: Test (unit + architecture)
+        run: dotnet test Atlas.slnx --no-build -c Release --logger "trx" --results-directory TestResults
+
+      - name: Annotate failing tests
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          ns = {"t": "http://microsoft.com/schemas/VisualStudio/TeamTest/2010"}
+          for path in glob.glob("TestResults/*.trx"):
+              for r in ET.parse(path).getroot().iter("{%s}UnitTestResult" % ns["t"]):
+                  if r.get("outcome") != "Failed":
+                      continue
+                  message = r.find(".//t:Message", ns)
+                  text = " ".join((message.text or "").split())[:900] if message is not None else "(no message)"
+                  print(f"::error title={r.get('testName')}::{text}")
+          PY
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/Atlas.Web/package-lock.json
+      - name: Install
+        run: npm ci
+        working-directory: src/Atlas.Web
+      - name: Web tests
+        run: npm test
+        working-directory: src/Atlas.Web
+      - name: Build
+        run: npm run build
+        working-directory: src/Atlas.Web
