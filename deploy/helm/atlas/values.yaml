@@ -1,0 +1,140 @@
+# Default values for the Atlas chart. Mirrors docker-compose.yml: same env names, same containment.
+image:
+  registry: ghcr.io/your-org
+  tag: "" # defaults to .Chart.AppVersion
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+# ---- Secrets -------------------------------------------------------------------------------------------------
+# Either point to an existing Secret with these keys, or set the values (the chart then creates the Secret).
+secrets:
+  existingSecret: "" # keys: masterKey, hmacKey, dbPassword, minioPassword
+  masterKey: ""      # base64 of 32 random bytes (openssl rand -base64 32) — AES-256-GCM for stored credentials/AI key
+  hmacKey: ""        # base64 of 32 random bytes — keyed fingerprints of detected secrets
+  dbPassword: ""     # used by the bundled PostgreSQL and by the connection string
+  minioPassword: ""
+
+# ---- Database ------------------------------------------------------------------------------------------------
+postgresql:
+  bundled: true # single-replica StatefulSet with a PVC; use an external managed instance in production
+  image: postgres:16-alpine
+  database: atlas
+  username: atlas
+  storage: 20Gi
+  storageClass: ""
+  # When bundled=false, provide the host (password still comes from the secret):
+  external:
+    host: ""
+    port: 5432
+
+# ---- Object storage (evidence/reports, optional bundled MinIO) ----------------------------------------------
+minio:
+  bundled: true
+  image: minio/minio:latest
+  storage: 50Gi
+  storageClass: ""
+
+# Optional local model runtime (no key, nothing leaves the cluster). Pulls `model` on start (~4–5 GB); needs
+# a node with ~8 GB free RAM (GPU strongly recommended for anything beyond demos).
+ollama:
+  enabled: false
+  image: ollama/ollama:latest
+  model: qwen2.5-coder:7b
+  storage: 20Gi
+  storageClass: ""
+  resources:
+    limits: { cpu: "4", memory: 10Gi }
+    requests: { cpu: "1", memory: 6Gi }
+
+pdf:
+  enabled: true
+  image: gotenberg/gotenberg:8
+  resources:
+    limits: { cpu: "1", memory: 1Gi }
+    requests: { cpu: 100m, memory: 256Mi }
+
+# ---- Atlas services -------------------------------------------------------------------------------------------
+api:
+  replicas: 1
+  resources:
+    limits: { cpu: "2", memory: 1Gi }
+    requests: { cpu: 250m, memory: 512Mi }
+  autoMigrate: true
+  vulnerabilitySync: true
+  rateLimitPerMinute: 600
+  extraEnv: [] # - { name: Atlas__Report__BrandName, value: "Acme Consulting" }
+
+worker:
+  replicas: 1 # scale out freely: SKIP LOCKED job claims never collide
+  resources:
+    limits: { cpu: "4", memory: 3Gi }
+    requests: { cpu: 500m, memory: 1Gi }
+  terminationGracePeriodSeconds: 90
+  scanning:
+    isolation: ChildProcess
+    childMemoryLimitMb: 2048
+    childTimeoutMinutes: 30
+    scannerTimeoutMinutes: 15
+    maxFiles: 250000
+  git:
+    historyMonths: 12
+    allowedHosts: [github.com, dev.azure.com, "*.visualstudio.com", gitlab.com]
+  extraEnv: []
+
+web:
+  replicas: 1
+  dnsResolver: "" # nginx resolver for the API name; default kube-dns.kube-system.svc.cluster.local
+  resources:
+    limits: { cpu: 200m, memory: 128Mi }
+    requests: { cpu: 20m, memory: 32Mi }
+
+# ---- Authentication / tenants --------------------------------------------------------------------------------
+auth:
+  enabled: false
+  authority: ""
+  clientId: ""
+  audience: ""
+  roleClaim: roles
+  adminRole: atlas-admin
+  analystRole: atlas-analyst
+tenants:
+  claim: tid
+  allowUnmappedUsers: true
+
+# ---- Persistence ---------------------------------------------------------------------------------------------
+# uploads and vulndata are written by the API and read by the worker → they need a ReadWriteMany class
+# (NFS, Azure Files, EFS, CephFS…) unless api and worker run on the same node. workspaces is worker-only.
+persistence:
+  storageClassRWX: ""     # e.g. azurefile, efs-sc, nfs-client
+  storageClassRWO: ""
+  uploads: { size: 20Gi }
+  vulndata: { size: 2Gi }
+  workspaces: { size: 50Gi }
+  # Read-only source roots for the "local" connector (hostPath or existing PVCs). Leave empty on clusters.
+  localSources: [] # - { name: projects, label: "E:/Projetos", hostPath: /mnt/projects }
+
+# ---- Networking ----------------------------------------------------------------------------------------------
+service:
+  type: ClusterIP
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  host: atlas.example.com
+  tls: [] # - { secretName: atlas-tls, hosts: [atlas.example.com] }
+  # Egress: api and worker need outbound HTTPS (git hosts, OSV, AI provider); data services need none.
+networkPolicy:
+  enabled: true
+
+serviceAccount:
+  create: true
+  name: ""
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1654
+  fsGroup: 1654
+  seccompProfile: { type: RuntimeDefault }
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: { drop: [ALL] }

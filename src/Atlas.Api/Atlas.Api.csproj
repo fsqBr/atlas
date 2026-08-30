@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Atlas.Application\Atlas.Application.csproj" />
+    <ProjectReference Include="..\Atlas.Ai\Atlas.Ai.csproj" />
+    <ProjectReference Include="..\Atlas.Infrastructure\Atlas.Infrastructure.csproj" />
+    <ProjectReference Include="..\Atlas.Contracts\Atlas.Contracts.csproj" />
+    <ProjectReference Include="..\Atlas.Connector.Local\Atlas.Connector.Local.csproj" />
+    <ProjectReference Include="..\Atlas.Connector.Git\Atlas.Connector.Git.csproj" />
+    <ProjectReference Include="..\Atlas.Connector.GitHub\Atlas.Connector.GitHub.csproj" />
+    <ProjectReference Include="..\Atlas.Connector.AzureDevOps\Atlas.Connector.AzureDevOps.csproj" />
+    <ProjectReference Include="..\Atlas.Connector.GitLab\Atlas.Connector.GitLab.csproj" />
+    <ProjectReference Include="..\Atlas.Connector.Upload\Atlas.Connector.Upload.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Runtime\Atlas.Scanner.Runtime.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Dependencies\Atlas.Scanner.Dependencies.csproj" />
+    <ProjectReference Include="..\Atlas.Language.CSharp\Atlas.Language.CSharp.csproj" />
+    <ProjectReference Include="..\Atlas.Language.Sql\Atlas.Language.Sql.csproj" />
+    <ProjectReference Include="..\Atlas.Language.VisualBasic\Atlas.Language.VisualBasic.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Secrets\Atlas.Scanner.Secrets.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Security\Atlas.Scanner.Security.csproj" />
+    <ProjectReference Include="..\Atlas.Reporting\Atlas.Reporting.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Quality\Atlas.Scanner.Quality.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.JavaScript\Atlas.Scanner.JavaScript.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Licenses\Atlas.Scanner.Licenses.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Privacy\Atlas.Scanner.Privacy.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Database\Atlas.Scanner.Database.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Infrastructure\Atlas.Scanner.Infrastructure.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Architecture\Atlas.Scanner.Architecture.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="9.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
+    <PackageReference Include="prometheus-net.AspNetCore" Version="8.2.1" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Atlas.IntegrationTests" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,232 @@
+name: atlas
+
+# Local/self-hosted topology (orchestrator lives inside the API process).
+# Postgres and MinIO are intentionally NOT published to the host — only the API and the web UI are.
+# Secrets come from .env (see .env.example); never commit .env.
+#
+# Containment (threat model):
+# - two networks: `atlas-data` is internal (no route to the internet) and holds Postgres, MinIO and the PDF
+# sidecar; `atlas-app` carries web -> api and gives api/worker their egress (git clones, OSV, provider APIs).
+# - api and worker run with a read-only root filesystem, all capabilities dropped, no-new-privileges,
+# memory and pid limits; writable paths are explicit volumes (workspaces, vuln data) plus a tmpfs /tmp.
+
+services:
+  atlas-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: atlas
+      POSTGRES_USER: atlas
+      POSTGRES_PASSWORD: ${ATLAS_DB_PASSWORD:?define ATLAS_DB_PASSWORD no arquivo .env}
+    volumes:
+      - atlas-pgdata:/var/lib/postgresql/data
+    networks: [atlas-data]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atlas -d atlas"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  atlas-object-storage:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: atlas
+      MINIO_ROOT_PASSWORD: ${ATLAS_MINIO_PASSWORD:?define ATLAS_MINIO_PASSWORD no arquivo .env}
+    volumes:
+      - atlas-minio-data:/data
+    networks: [atlas-data]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  atlas-api:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.api
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__AtlasDb: Host=atlas-postgres;Port=5432;Database=atlas;Username=atlas;Password=${ATLAS_DB_PASSWORD}
+      Atlas__AutoMigrate: "true"
+      Atlas__Secrets__HmacKeyBase64: ${ATLAS_SECRETS_HMAC_KEY:?define ATLAS_SECRETS_HMAC_KEY no arquivo .env}
+      Atlas__Secrets__MasterKeyBase64: ${ATLAS_MASTER_KEY:?define ATLAS_MASTER_KEY no arquivo .env}
+      # Source roots visible to the folder picker (mounted read-only below). Labels are the host paths.
+      Atlas__LocalSources__Roots__0__Path: /sources
+      Atlas__LocalSources__Roots__0__Label: ${ATLAS_LOCAL_SOURCES:-./samples}
+      Atlas__LocalSources__Roots__1__Path: /sources-2
+      Atlas__LocalSources__Roots__1__Label: ${ATLAS_LOCAL_SOURCES_2:-./samples}
+      Atlas__LocalSources__Roots__2__Path: /sources-3
+      Atlas__LocalSources__Roots__2__Label: ${ATLAS_LOCAL_SOURCES_3:-./samples}
+      Atlas__Uploads__Directory: /var/atlas/uploads
+      # Bundled local model (compose profile ai-local): the AI settings page offers it when it is running.
+      Atlas__Ai__LocalOllamaUrl: http://atlas-ollama:11434
+      Atlas__Ai__LocalModel: ${ATLAS_LOCAL_MODEL:-qwen2.5-coder:7b}
+      Atlas__Vulnerabilities__OsvBundlePath: /var/atlas/vulndata/nuget-osv.json
+      Atlas__Vulnerabilities__SyncEnabled: "true"
+      # PDF export goes through the Gotenberg sidecar (Chromium in its own container; the API ships no browser).
+      Atlas__Report__PdfServiceUrl: http://atlas-pdf:3000
+      # OIDC (off by default). Set ATLAS_AUTH_* in .env to require sign-in: any OIDC provider (Entra ID, Keycloak…).
+      Atlas__Auth__Enabled: ${ATLAS_AUTH_ENABLED:-false}
+      Atlas__Auth__Authority: ${ATLAS_AUTH_AUTHORITY:-}
+      Atlas__Auth__ClientId: ${ATLAS_AUTH_CLIENT_ID:-}
+      Atlas__Auth__Audience: ${ATLAS_AUTH_AUDIENCE:-}
+      # Operations: JSON logs for collectors, Prometheus /metrics, per-IP rate limit, audit trail.
+      Atlas__Operations__JsonLogs: "true"
+      Atlas__Operations__MetricsEnabled: "true"
+      Atlas__Operations__RateLimitPerMinute: "600"
+      Atlas__Operations__AuditEnabled: "true"
+    volumes:
+      - ${ATLAS_LOCAL_SOURCES:-./samples}:/sources:ro
+      - ${ATLAS_LOCAL_SOURCES_2:-./samples}:/sources-2:ro
+      - ${ATLAS_LOCAL_SOURCES_3:-./samples}:/sources-3:ro
+      - atlas-vulndata:/var/atlas/vulndata
+      - atlas-uploads:/var/atlas/uploads
+    tmpfs:
+      - /tmp:size=256m
+    networks: [atlas-app, atlas-data]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 1g
+    pids_limit: 256
+    ports:
+      - "8080:8080"
+    depends_on:
+      atlas-postgres:
+        condition: service_healthy
+
+  atlas-worker:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.worker
+    # Give in-flight scans time to persist state on shutdown (lease recovery covers hard kills).
+    stop_grace_period: 90s
+    environment:
+      ConnectionStrings__AtlasDb: Host=atlas-postgres;Port=5432;Database=atlas;Username=atlas;Password=${ATLAS_DB_PASSWORD}
+      Atlas__Secrets__HmacKeyBase64: ${ATLAS_SECRETS_HMAC_KEY:?define ATLAS_SECRETS_HMAC_KEY no arquivo .env}
+      Atlas__Secrets__MasterKeyBase64: ${ATLAS_MASTER_KEY:?define ATLAS_MASTER_KEY no arquivo .env}
+      Atlas__Vulnerabilities__OsvBundlePath: /var/atlas/vulndata/nuget-osv.json
+      # Clones land on a dedicated volume (not tmpfs: repositories can be large); GC'd by the worker.
+      Atlas__Workspaces__RootPath: /var/atlas/workspaces
+      Atlas__Uploads__Directory: /var/atlas/uploads
+      # each run executes in a disposable child process (heap-capped, wall-clock timeout).
+      Atlas__Scanning__Isolation: ChildProcess
+      Atlas__Scanning__ChildMemoryLimitMb: "2048"
+      Atlas__Scanning__ChildTimeoutMinutes: "30"
+      Atlas__Scanning__ScannerTimeoutMinutes: "15"
+      Atlas__Scanning__MaxFiles: "250000"
+      # Tier 2 (opt-in): restore packages inside the scan for project-accurate symbols. Needs the SDK image
+      # (build arg ATLAS_WORKER_BASE) and a writable package cache on the workspaces volume.
+      Atlas__Scanning__Tier2__Enabled: ${ATLAS_TIER2_ENABLED:-false}
+      Atlas__Scanning__Tier2__PackageCache: /var/atlas/workspaces/.nuget
+      # License compliance: nuspec/npm packument lookups (api.nuget.org, registry.npmjs.org) cached on the workspaces volume.
+      Atlas__Licenses__Enabled: "true"
+      Atlas__Licenses__CachePath: /var/atlas/workspaces/.licenses.json
+      # Comma-free list: Atlas__Licenses__Denied__0: AGPL-3.0-only  (SPDX ids or classes StrongCopyleft/Restricted)
+      Atlas__Operations__JsonLogs: "true"
+      # Chat notifications for completed runs (optional): Slack incoming webhook and/or a Teams Workflows webhook.
+      # Atlas__Notifications__SlackWebhookUrl: https://hooks.slack.com/services/...
+      # Atlas__Notifications__TeamsWebhookUrl: https://prod-XX.westus.logic.azure.com/workflows/...
+      # Commit history window for churn/authorship rules (0 = shallow clone, no history).
+      Atlas__Connectors__Git__HistoryMonths: "12"
+      # Egress allow-list for clones (exact host or *.suffix). Add your own git servers here.
+      Atlas__Connectors__Git__AllowedHosts__0: github.com
+      Atlas__Connectors__Git__AllowedHosts__1: dev.azure.com
+      Atlas__Connectors__Git__AllowedHosts__2: "*.visualstudio.com"
+      Atlas__Connectors__Git__AllowedHosts__3: gitlab.com
+    volumes:
+      # Local source folders for the "local" connector, read-only (borrowed, never modified).
+      # Set ATLAS_LOCAL_SOURCES in .env to a host folder (e.g. E:/Projetos); it appears as /sources inside the worker.
+      - ${ATLAS_LOCAL_SOURCES:-./samples}:/sources:ro
+      - ${ATLAS_LOCAL_SOURCES_2:-./samples}:/sources-2:ro
+      - ${ATLAS_LOCAL_SOURCES_3:-./samples}:/sources-3:ro
+      # Browser uploads written by the API, extracted here into the workspace volume.
+      - atlas-uploads:/var/atlas/uploads:ro
+      # OSV vulnerability bundle synced by the API (egress) and read here (no egress needed for scans).
+      - atlas-vulndata:/var/atlas/vulndata:ro
+      - atlas-workspaces:/var/atlas/workspaces
+    tmpfs:
+      - /tmp:size=512m
+    networks: [atlas-app, atlas-data]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 3g
+    pids_limit: 512
+    depends_on:
+      atlas-postgres:
+        condition: service_healthy
+
+  atlas-web:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.web
+    ports:
+      - "3000:80"
+    networks: [atlas-app]
+    # nginx needs to bind :80 and drop to its worker user; everything else is dropped.
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETGID, SETUID, NET_BIND_SERVICE]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m
+    depends_on:
+      - atlas-api
+
+  # Chromium-as-a-service for PDF export of the executive report (https://gotenberg.dev, MIT). Internal only:
+  # no published port; JavaScript disabled; it only ever receives Atlas' own HTML.
+  atlas-pdf:
+    image: gotenberg/gotenberg:8
+    command:
+      - "gotenberg"
+      - "--api-timeout=120s"
+      - "--chromium-disable-javascript=true"
+    networks: [atlas-data]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 1g
+    pids_limit: 512
+    restart: unless-stopped
+
+  # ---- Optional: local model runtime, no API key, nothing leaves the machine ----------------------------------
+  # docker compose --profile ai-local up -d → pulls ATLAS_LOCAL_MODEL (≈4–5 GB) on first start; needs ~8 GB RAM.
+  # CPU-only inference is slow (minutes per batch); for real work prefer a hosted provider or a GPU host.
+  atlas-ollama:
+    image: ollama/ollama:latest
+    profiles: [ai-local]
+    volumes:
+      - atlas-ollama-models:/root/.ollama
+    networks: [atlas-app]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: ${ATLAS_LOCAL_MODEL_MEMORY:-10g}
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  atlas-ollama-pull:
+    image: ollama/ollama:latest
+    profiles: [ai-local]
+    depends_on:
+      atlas-ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://atlas-ollama:11434
+    entrypoint: ["ollama", "pull", "${ATLAS_LOCAL_MODEL:-qwen2.5-coder:7b}"]
+    restart: "no"
+    networks: [atlas-app]
+
+networks:
+  atlas-app:
+  atlas-data:
+    internal: true
+
+volumes:
+  atlas-pgdata:
+  atlas-minio-data:
+  atlas-vulndata:
+  atlas-workspaces:
+  atlas-uploads:
+  atlas-ollama-models:
