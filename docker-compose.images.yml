@@ -1,0 +1,16 @@
+# Run Atlas from the published images instead of building locally:
+#
+# docker compose -f docker-compose.yml -f docker-compose.images.yml up -d
+#
+# ATLAS_VERSION in .env pins a release (default: latest release line). Tags: https://github.com/fsqBr/atlas/releases
+# Note: Tier 2 analysis needs the SDK-based worker image, which is only available by building locally.
+services:
+  atlas-api:
+    image: ghcr.io/fsqbr/atlas-api:${ATLAS_VERSION:-0.36.1}
+    build: !reset null
+  atlas-worker:
+    image: ghcr.io/fsqbr/atlas-worker:${ATLAS_VERSION:-0.36.1}
+    build: !reset null
+  atlas-web:
+    image: ghcr.io/fsqbr/atlas-web:${ATLAS_VERSION:-0.36.1}
+    build: !reset null
