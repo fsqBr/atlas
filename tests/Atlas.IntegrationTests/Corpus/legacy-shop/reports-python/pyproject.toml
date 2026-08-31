@@ -1,0 +1,3 @@
+[project]
+name = "reports-python"
+requires-python = ">=3.6"
