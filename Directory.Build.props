@@ -1,0 +1,7 @@
+<Project>
+  <!-- Product version stamped into every assembly; bump with each release tag. -->
+  <PropertyGroup>
+    <Version>0.45.0</Version>
+    <InformationalVersion>0.36.1</InformationalVersion>
+  </PropertyGroup>
+</Project>

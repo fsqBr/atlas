@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "atlas.fullname" . }}-worker
+  labels:
+    {{- include "atlas.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  replicas: {{ .Values.worker.replicas }}
+  strategy:
+    type: Recreate # the workspaces PVC is ReadWriteOnce
+  selector:
+    matchLabels:
+      {{- include "atlas.selector" . | nindent 6 }}
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        {{- include "atlas.selector" . | nindent 8 }}
+        app.kubernetes.io/component: worker
+    spec:
+      serviceAccountName: {{ include "atlas.serviceAccountName" . }}
+      terminationGracePeriodSeconds: {{ .Values.worker.terminationGracePeriodSeconds }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: worker
+          image: "{{ .Values.image.registry }}/atlas-worker:{{ include "atlas.tag" . }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          env:
+            - name: Atlas__Workspaces__RootPath
+              value: /var/atlas/workspaces
+            - name: Atlas__Scanning__Isolation
+              value: {{ .Values.worker.scanning.isolation | quote }}
+            - name: Atlas__Scanning__ChildMemoryLimitMb
+              value: {{ .Values.worker.scanning.childMemoryLimitMb | quote }}
+            - name: Atlas__Scanning__ChildTimeoutMinutes
+              value: {{ .Values.worker.scanning.childTimeoutMinutes | quote }}
+            - name: Atlas__Scanning__ScannerTimeoutMinutes
+              value: {{ .Values.worker.scanning.scannerTimeoutMinutes | quote }}
+            - name: Atlas__Scanning__MaxFiles
+              value: {{ .Values.worker.scanning.maxFiles | quote }}
+            - name: Atlas__Connectors__Git__HistoryMonths
+              value: {{ .Values.worker.git.historyMonths | quote }}
+            {{- range $i, $host := .Values.worker.git.allowedHosts }}
+            - name: Atlas__Connectors__Git__AllowedHosts__{{ $i }}
+              value: {{ $host | quote }}
+            {{- end }}
+            {{- include "atlas.sharedEnv" . | nindent 12 }}
+            {{- with .Values.worker.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: workspaces
+              mountPath: /var/atlas/workspaces
+            - name: vulndata
+              mountPath: /var/atlas/vulndata
+              readOnly: true
+            - name: uploads
+              mountPath: /var/atlas/uploads
+              readOnly: true
+            {{- include "atlas.localSourceMounts" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.worker.resources | nindent 12 }}
+      volumes:
+        - name: tmp
+          emptyDir: { sizeLimit: 1Gi }
+        - name: workspaces
+          persistentVolumeClaim:
+            claimName: {{ include "atlas.fullname" . }}-workspaces
+        - name: vulndata
+          persistentVolumeClaim:
+            claimName: {{ include "atlas.fullname" . }}-vulndata
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: {{ include "atlas.fullname" . }}-uploads
+        {{- include "atlas.localSourceVolumes" . | nindent 8 }}
