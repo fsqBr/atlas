@@ -1,0 +1,280 @@
+# Changelog
+
+Release notes for Atlas. Versions follow `MAJOR.MINOR.PATCH`; container images are published to
+`ghcr.io/fsqbr/atlas-{api,worker,web}` with the same tag.
+
+## v0.48.1
+
+- **DI registration guard** (tests): a new architecture test asserts every `IScanner` / `ILanguageAnalyzer`
+  present in the shipped assemblies is registered in the worker's composition root and is constructible — so a
+  scanner that is added but never wired fails CI instead of silently never running. (Chosen over reflection-based
+  auto-registration, which several config-taking scanners can't do cleanly and which would hide what actually runs.)
+
+## v0.48.0
+
+Full-product audit hardening (security, reliability, correctness, fairness, performance):
+
+- **Security** — the business-rules CSV export now neutralizes spreadsheet formula injection (`=`/`+`/`-`/`@`),
+  matching the findings/compliance exports.
+- **Reliability** — running scans now renew their queue lease with a periodic heartbeat, so a scan longer than the
+  30-minute lease can no longer be reclaimed and run twice under multiple worker replicas; if the lease is lost the
+  run is cancelled rather than double-writing. The rule catalog upsert is idempotent (retries on a concurrent
+  insert) so a brand-new scanner's first run across two workers/tenants no longer fails on a unique violation. The
+  weekly digest dedupe is now a durable ATOMIC claim (not check-then-set), so replicas never send it twice.
+- **CI gate correctness** — baseline mode (`?failOnNew=`) now fails on findings the latest run *reintroduced*
+  (regressions), not only brand-new ones: a fixed-then-returned Critical no longer slips through.
+- **Health-score fairness** — Java/Python estates (which declare no projects) are sized from their source files
+  instead of being scored on a fixed 10-project denominator, so a large non-.NET monorepo is no longer over-penalized.
+  A completed run with no analyzable source now reads as "nothing to assess", not a perfect 100/Low score.
+- **ROI honesty** — modernization payback beyond a 10-year horizon shows "—" instead of a centuries figure; per
+  strategy it is scaled by the share of the legacy estate that strategy actually retires (incremental strategies no
+  longer show an over-optimistic payback). Tenants whose currency differs from the deployment default can now enter
+  their own annual **savings rates** (*Settings → Cost model*) to get ROI/payback in their currency, instead of the
+  savings section silently vanishing.
+- **Performance** — the portfolio's "latest snapshot per assessment" queries no longer materialize the entire
+  snapshot history (a `NOT EXISTS` predicate uses the existing index), and the OSV severity mapping and Java
+  build-output path check are now single shared implementations so ecosystems can't drift apart.
+- **Architecture guardrails** — the layer-dependency tests now discover every scanner and language adapter by
+  convention (was a hand-list that left 8 of 13 scanners and Java/Python/VB/Sql unguarded); a boundary violation in
+  any current or future adapter breaks CI. Language ids are shared constants instead of scattered magic strings.
+
+Known follow-ups (tracked, deliberately not rushed): splitting the `Program.cs` endpoint file is an incremental
+refactor; a finding-fingerprint/rule-version policy with a waiver-migration path is a product decision.
+
+## v0.47.0
+
+- **Python support (v1 — same recipe as Java)**: a Python language adapter reads `.py` sources as data —
+  files, classes, functions (indentation-based), cyclomatic complexity, hot functions, `test_` detection —
+  and feeds the shared quality/duplication rules; `hashlib` MD5/SHA-1 and SQL built by `+`/`%`/`format`/
+  f-strings in `execute(...)` flow into the existing security rules. A new **Python platform scanner**
+  (`python.*` rules) judges `requirements.txt`/`pyproject.toml`/`Pipfile`/`setup.py`: package inventory,
+  interpreter floors out of support (`python.interpreter.eol` — Python 2 is High), end-of-life frameworks
+  (Django 1.x/2.x, Flask 1.x, Celery 4, Tornado 5, nose, PyCrypto), and known-vulnerable **pinned** PyPI
+  dependencies against the offline OSV bundle — add the PyPI export to `Atlas:Vulnerabilities:SyncUrls` to
+  enable CVE matching (opt-in). Ranges are inventoried, never accused; vendored paths (site-packages, .tox)
+  are ignored.
+
+## v0.46.0
+
+- **Java support (v1 — syntactic + manifests, no build)**: a new Java language adapter reads `.java` sources as
+  data — files, packages, types, methods, cyclomatic complexity, hot methods, `@Test` counts — so inventory,
+  quality metrics and duplication now cover Java estates; weak-hash (`MessageDigest` MD5/SHA-1) and SQL-built-by-
+  concatenation patterns flow into the existing security rules. A new **Java platform scanner** (`java.*` rules)
+  judges Maven/Gradle manifests: module inventory, JDK targets out of support (`java.jdk.eol`), end-of-life
+  frameworks (Struts 1, Log4j 1.x, Spring 4, Boot 1.x, Axis 1, Commons HttpClient 3…), the `javax.*`→`jakarta.*`
+  migration surface, and known-vulnerable Maven dependencies against the offline OSV bundle — add the OSV Maven
+  export to `Atlas:Vulnerabilities:SyncUrls` to enable CVE matching (opt-in because of its size). The semantic
+  tier (symbol resolution) stays a future sidecar; findings are honest about being declared-version, text-level
+  evidence.
+- **OSV bundle hardening** (motivated by Maven, benefits every ecosystem): qualifier versions
+  (`4.3.30.RELEASE`, `.Final`, `.GA`, `-rc1`) now parse with Maven semantics, and a range whose
+  `fixed`/`last_affected` event cannot be parsed is dropped whole instead of degrading into an
+  open-ended "everything after introduced is vulnerable" match — patched estates no longer risk
+  false High/Critical findings when a feed entry uses exotic version strings.
+
+## v0.45.0
+
+- **Portfolio executive report** (`GET /api/portfolio/report[.pdf]?lang=&tag=&weeks=`, buttons on the Portfolio
+  page): the whole estate — or one product group via `?tag=` — as a client-ready document: KPIs, risk
+  distribution, weekly health trend, top rules and the per-assessment table. Same white-label options
+  (brand, logo, accent colour) and PDF pipeline as the per-assessment report; `?access_token=` works for
+  browser downloads. `GET /api/portfolio` also accepts `?tag=` now.
+- **Baseline quality gate** (`?failOnNew=<severity>` on `/gate` and `/pr-comment`): fails only on findings the
+  LATEST run introduced — the existing stock of debt never blocks adoption, regressions do. The first completed
+  run establishes the baseline; new findings count at their rule group's max severity.
+- **Dead code v2** (`quality.deadcode.member`): unreferenced `private` methods, fields, properties and events as
+  Informational candidates. Same evidence-of-life guards as types — unresolved names, identifier-shaped words in
+  string literals (reflection by name) and names in markup/config files keep members alive — plus magic method
+  names (Unity/WinForms), explicit interface implementations, fields of `[Serializable]` types and attributed
+  members are never candidates; a dead type reports once, not once per member.
+
+## v0.44.0
+
+- **Dead code scanner** (`quality.deadcode.type`): top-level `internal` types with no references anywhere
+  in the analyzed source are reported as *candidates* (Informational, medium confidence). Conservative by
+  design: framework-instantiated shapes (controllers, attributes, migrations, workers, handlers…), types
+  with attributes, entry points, nested types and generated files are skipped, and references are matched
+  across projects — a type used from another project still counts as alive. So do references inside
+  generated/designer files, names the compiler fails to resolve (evidence of life, never of death) and
+  type names appearing in XAML/Razor/WebForms markup or `.config` files. Reflection, DI-by-convention
+  and serialization are invisible to static analysis, which is why these are candidates, not verdicts.
+  The semantic pass now shares one model per tree across all Tier 1.75 consumers, so the new analysis
+  adds no repeated symbol resolution.
+
+## v0.43.0
+
+Platform maturity:
+
+- **Per-tenant notification channels** (*Settings → Administration*, `GET|PUT /api/settings/notifications`):
+  webhook + signing secret, Slack/Teams cards and the weekly digest, per tenant — overriding the
+  deployment-wide `Atlas:Notifications`. The digest becomes multi-tenant-safe: each tenant's numbers go
+  only to that tenant's channels (the global channels still refuse to mix tenants).
+- **Administration page**: tenants (list/create) and this tenant's channels, in the UI instead of raw API calls.
+- **Product groups get their own trend**: `GET /api/portfolio/trend?tag=` — clicking a tag on the portfolio
+  page now filters the trend charts too, so a product (a set of tagged assessments) has its own history.
+- **Live queue** (`GET /api/events/jobs`, server-sent events): the Queue page updates the moment a job
+  changes state; 5-second polling remains as the automatic fallback.
+
+## v0.42.0
+
+Turning the assessment into a decision:
+
+- **savings.v1 — the other half of the business case**: alongside what modernization costs, Atlas now
+  estimates what staying legacy costs every year (Windows hosting of legacy apps, extended-support
+  exposure, SQL Server consolidation — all parameters under `Atlas:Cost`; shown only when the tenant's
+  currency matches the deployment's savings calibration). The modernization tab and the executive report show the annual savings and a
+  **payback** per strategy (likely cost ÷ monthly savings).
+- **Export the plan as issues** (`POST /api/assessments/{id}/export/issues`, button on the Findings
+  tab): the top open findings become GitHub issues or Azure DevOps work items on the assessed
+  repository, using the assessment's stored credential — each with severity, rule, location,
+  remediation and a link back to Atlas.
+- **One-click demo estate** (`POST|DELETE /api/demo`, button on the empty dashboard): five entirely
+  fictional assessments with completed runs, reconciled findings and backdated snapshots — dashboards,
+  portfolio, trend and reports come alive in seconds, and one click removes it all.
+- **Compliance pack** (`GET /api/assessments/{id}/compliance.zip`, button on the Report tab): privacy
+  findings, license inventory and every waiver (reason, author, expiry) in one ZIP for auditors.
+
+## v0.41.0
+
+- The running version is visible in the UI (sidebar footer, linking to the release notes) and on
+  `GET /api/version` — matching an install to a release tag is now a glance, not a shell session.
+
+## v0.40.1
+
+Hardening release: an adversarial review of everything v0.39/v0.40 introduced (same treatment the rule
+engine got in v0.38) confirmed and fixed 14 defects before they reached anyone:
+
+- Portfolio trend now respects per-assessment sharing (a restricted assessment no longer leaks its scores
+  into the chart) and reads a bounded window instead of the whole snapshot history.
+- Waivers: a policy's expiry now travels into the suppressions it creates (waived findings actually come
+  back); the expiry sweep revokes the spent waiver so the audit trail stays honest; triage always revokes
+  the previous active suppression; expiry on FalsePositive/Reopen is rejected instead of silently dropped.
+- SARIF import: external strings are clamped to the catalog's column sizes (a long rule description no
+  longer 500s the import); a failure mid-import can't leave a run stuck in Running; the 25 MB limit is
+  enforced while reading (chunked encoding can't bypass it); imported candidates go through the same
+  suppression-policy and severity-tuning pipeline as Atlas's own scans; rule-id slug collisions get a
+  deterministic suffix instead of merging distinct rules; multi-run logs are merged (same tool) and
+  foreign runs are reported (`runsIgnored`), never silently dropped.
+- Weekly digest refuses to post on multi-tenant deployments (the chat webhooks are deployment-wide; a
+  combined digest would leak names and scores across tenants).
+- Rule severity tuning: concurrent writes answer 409 instead of 500; catalog texts use the same PT
+  fallback as findings; cost endpoints resolve the tenant explicitly and report honest values.
+
+## v0.40.0
+
+- **Cost model per tenant** (*Settings -> Cost model*, `GET|PUT|DELETE /api/settings/cost`): currency, hourly rate
+  and team size are the tenant's market facts — a US estate is estimated at US$ rates, not at converted BRL. Every
+  estimate and report of the tenant uses them; frozen calibration records keep the values of their time.
+- **Waivers with expiry**: suppressing a finding (and suppression policies) can carry an expiry — "accepted for 90
+  days". Expired policies stop filtering on the next run; expired finding waivers are reopened automatically by an
+  hourly sweep, and the health score is recomputed.
+- **Portfolio groups (tags)**: free-form labels per assessment (*Settings -> Tags*, `PUT /api/assessments/{id}/tags`),
+  with a group roll-up (count, average score, open findings) and click-to-filter on the portfolio page.
+- **Weekly digest**: `Atlas:Notifications:DigestDayOfWeek` (+ `DigestHourUtc`) posts a weekly portfolio pulse to the
+  Slack/Teams webhooks — average health and open findings vs seven days ago, top movers, goals at risk. Counts only.
+- **SARIF import** (`POST /api/assessments/{id}/sarif`, also under *Settings*): bring ESLint/Semgrep/Trivy/CodeQL
+  results into an assessment as first-class findings — each tool becomes its own scanner, re-imports resolve what the
+  tool no longer reports, and Atlas's own scans never touch them.
+- Portfolio trend: young estates (less than two weeks of history) are sampled daily, so the chart lives from day one.
+- Migrations: `AddTenantCostProfiles`, `AddSuppressionExpiry`, `AddAssessmentTags`.
+
+## v0.39.0
+
+- **Rule catalog page** (`/rules`, `GET /api/rules`): every rule Atlas checks — scanner, category, description
+  (EN/PT), open findings and affected assessments in your estate — with **per-tenant severity tuning**
+  (`PUT /api/rules/{id}/severity`, admin). Tuned severities apply to candidates from each assessment's next run;
+  fingerprints exclude severity, so finding history is preserved. Silencing a rule entirely remains the job of
+  suppression policies (reason + audit trail).
+- **Portfolio trend by dimension**: the average-health chart gained a metric selector (Overall, Security,
+  Modernization, Dependencies, Architecture, Quality) — `GET /api/portfolio/trend` now returns per-dimension
+  weekly averages, recomputed from the persisted health snapshots.
+- Migration `AddRuleSeverityOverrides` (table `rule_severity_overrides`).
+
+## v0.38.0
+
+Rule and scoring accuracy release: a deep audit of every scanner rule and evaluation confirmed 35 defects; all are
+fixed here. Highlights:
+
+- Health score: a crashed/timed-out scan host no longer collapses the score (the size normalization now falls back
+  to the persisted inventory); the report's totals come from the full open set instead of a 5,000-row page; failed
+  runs are never used as comparison baselines.
+- Secrets: prefixed credential names (`db_password`, `dbPassword`, `aws_secret_access_key`) and unquoted `.env`/YAML
+  assignments are now detected; new detectors for Anthropic, OpenAI, GitLab and npm tokens; UTF-16 config files are
+  scanned.
+- Dependencies/OSV: exact-pin (`[12.0.1]`) and floating (`13.*`) versions are matched instead of silently skipped;
+  multi-branch advisories no longer double-count; CVSS vector-only severities are scored (a 9.8 vector was landing
+  on Medium); npm aliased packages match by their real name; `Microsoft.AspNet.WebApi.Client` is no longer a
+  migration blocker.
+- Privacy: `nameof(...)` is no longer treated as leaked data; `dialog`/`catalog` are not log sinks; service/validator
+  fields are not PII inventory.
+- Quality/architecture: git history follows renames and ignores bot authors (hotspots and knowledge silos survive a
+  repository reorganization); production libraries referencing `xunit.abstractions` are not test projects; coverage
+  by reference walks the project-reference closure; duplicated coverage reports are ingested once; duplication
+  blocks no longer fuse adjacent duplicates of different partners.
+- Licenses/infra/SQL/JS: `AND` with an unknown license term now surfaces as unknown; lowercase `or`/`and` SPDX
+  operators parse; the EOL base-image catalog covers node 18/20, .NET 9.0, postgres 13, mongo 5/6, alpine 3.19/3.20
+  and friends; `FROM <stage>` references are not "unpinned images"; parameterized `sp_executesql` next to unrelated
+  arithmetic is no longer "dynamic SQL"; hand-written `jquery.*.js` plugins are scanned.
+- Evaluations: targets count the whole target day (UTC); benchmark percentiles use midpoint ranking (a uniform
+  estate reads 50, not 100); cost bands keep width on small estates; calibration compares actuals against the
+  estimate frozen at record time (new `EstimatedHours` on actuals, migration `AddCalibrationEstimate`); the
+  portfolio trend follows triage recomputes; tenant-wide suppression policies apply to existing findings
+  immediately; the report's `?since=` returns "no changes" when nothing ran after the baseline.
+
+## v0.37.0
+
+- Portfolio history: the portfolio page now charts average health and open findings week by week
+  (`GET /api/portfolio/trend?weeks=`), recomputed from the runs that already happened — each assessment counts with
+  its latest completed run up to that week.
+- Report baseline: the executive report (HTML and PDF) accepts `?since=` and the Report tab gained a "compare with"
+  picker — the "what changed" section compares against the chosen older run instead of only the previous one, for a
+  monthly executive view.
+- Slack and Teams notifications: `Atlas:Notifications:SlackWebhookUrl` (incoming webhook) and `TeamsWebhookUrl`
+  (Teams Workflows webhook) receive every completed run as a formatted card — score with delta, new/resolved/regressed
+  counts, target status and a link. Counts only, never finding contents.
+- GitLab CI template `deploy/ci/gitlab-atlas.yml`: include it remotely, and with a project access token it posts and
+  keeps updating the merge-request comment (SARIF and the comment are also kept as artifacts).
+- Repository: Dependabot watches NuGet, npm, GitHub Actions and Docker images; release badge in the README.
+
+## v0.36.1
+
+- Run Atlas straight from the published images, no local build: `docker compose -f docker-compose.yml -f docker-compose.images.yml up -d` (pin a release with `ATLAS_VERSION`). Building from source remains the path for Tier 2's SDK worker image.
+- Quick start rewritten from a fresh-clone walkthrough: key generation on Windows PowerShell, expected first-build time, bundled legacy sample step by step, Windows/WSL 2 notes and a troubleshooting table.
+- Folder picker: the same host folder mounted more than once (the `_2`/`_3` defaults) now shows a single root.
+
+## v0.36.0 — first public release
+
+Everything below ships in this release; later entries will list what changed.
+
+### Assessing
+- Sources: mounted local folders with a folder picker, browser upload of a folder on your machine, git URLs, and
+  GitHub / Azure DevOps / GitLab locators with repository discovery and stored (encrypted) credentials.
+- Analysis without executing code: C# and VB.NET through Roslyn, SQL and JavaScript/TypeScript through text parsers,
+  project files, lockfiles, configuration, Dockerfiles and compose files. Opt-in Tier 2 (`dotnet restore` in a sandbox).
+- Scanners: dependencies (NuGet + npm against OSV, end-of-life frameworks, weighted migration blockers), security,
+  secrets, personal data and leakage, quality (complexity, duplication, tests, coverage reports, legacy APIs),
+  architecture (cycles, fan-out, change hotspots and knowledge silos from git history), database footprint,
+  infrastructure, front-end frameworks, license compliance with a CycloneDX SBOM.
+- Findings with stable fingerprints across runs, triage (suppress, false positive, standing policies per rule/path),
+  scope exclusions and `.atlasignore`, aggregation, a rule-regression corpus as a test gate.
+
+### Understanding
+- Health score (0–100, five weighted dimensions, every lost point attributed to a rule).
+- Six modernization strategies ranked on evidence, effort/duration/cost ranges with explicit assumptions, a phased
+  roadmap, calibration against real outcomes.
+- Executive report (HTML and PDF, English and Portuguese, white-label), CSV/JSON/SARIF exports, SBOM, run-to-run and
+  side-by-side comparisons, portfolio view with benchmark quartiles and targets.
+
+### AI (bring your own key — Anthropic, OpenAI, Azure OpenAI or local Ollama)
+- Explain a finding, suggest a fix as a unified diff, recover business rules from decision-heavy methods, write the
+  executive summary, draft a migration plan, add a reviewer note to the pull-request comment. Always labelled, cached,
+  never a source of scores or findings; thumbs up/down feedback with a perceived-quality view.
+
+### Operating
+- Web UI: portfolio dashboard, live assessment overview, charts across the product, light/dark theme, presentation
+  mode, EN/PT.
+- CI: quality gate scripts (bash, PowerShell), composite GitHub Action and Azure DevOps template, SARIF upload and a
+  pull-request comment that updates itself.
+- Platform: multi-tenant with per-assessment access lists, optional OIDC sign-in and RBAC, API tokens, scheduled runs
+  with signed webhooks, Prometheus metrics, JSON logs, audit trail, rate limiting, scan isolation in a disposable
+  child process, Docker Compose and a Helm chart, backup/restore scripts.
