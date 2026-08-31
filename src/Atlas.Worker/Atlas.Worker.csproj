@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-Atlas.Worker-86ee9a89-a7e8-402d-802a-7da5eac7f6f8</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Atlas.Application\Atlas.Application.csproj" />
+    <ProjectReference Include="..\Atlas.Ai\Atlas.Ai.csproj" />
+    <ProjectReference Include="..\Atlas.Infrastructure\Atlas.Infrastructure.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Runtime\Atlas.Scanner.Runtime.csproj" />
+    <ProjectReference Include="..\Atlas.Connector.Local\Atlas.Connector.Local.csproj" />
+    <ProjectReference Include="..\Atlas.Connector.Git\Atlas.Connector.Git.csproj" />
+    <ProjectReference Include="..\Atlas.Connector.GitHub\Atlas.Connector.GitHub.csproj" />
+    <ProjectReference Include="..\Atlas.Connector.AzureDevOps\Atlas.Connector.AzureDevOps.csproj" />
+    <ProjectReference Include="..\Atlas.Connector.GitLab\Atlas.Connector.GitLab.csproj" />
+    <ProjectReference Include="..\Atlas.Connector.Upload\Atlas.Connector.Upload.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Dependencies\Atlas.Scanner.Dependencies.csproj" />
+    <ProjectReference Include="..\Atlas.Language.CSharp\Atlas.Language.CSharp.csproj" />
+    <ProjectReference Include="..\Atlas.Language.Sql\Atlas.Language.Sql.csproj" />
+    <ProjectReference Include="..\Atlas.Language.VisualBasic\Atlas.Language.VisualBasic.csproj" />
+    <ProjectReference Include="..\Atlas.Language.Java\Atlas.Language.Java.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Secrets\Atlas.Scanner.Secrets.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Security\Atlas.Scanner.Security.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Quality\Atlas.Scanner.Quality.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.JavaScript\Atlas.Scanner.JavaScript.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Java\Atlas.Scanner.Java.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Licenses\Atlas.Scanner.Licenses.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Privacy\Atlas.Scanner.Privacy.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Database\Atlas.Scanner.Database.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Infrastructure\Atlas.Scanner.Infrastructure.csproj" />
+    <ProjectReference Include="..\Atlas.Scanner.Architecture\Atlas.Scanner.Architecture.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Atlas.IntegrationTests" />
+  </ItemGroup>
+</Project>

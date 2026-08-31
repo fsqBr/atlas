@@ -1,0 +1,46 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Atlas.Api/Atlas.Api.csproj" />
+    <Project Path="src/Atlas.Ai/Atlas.Ai.csproj" />
+    <Project Path="src/Atlas.Application/Atlas.Application.csproj" />
+    <Project Path="src/Atlas.Connector.Abstractions/Atlas.Connector.Abstractions.csproj" />
+    <Project Path="src/Atlas.Connector.AzureDevOps/Atlas.Connector.AzureDevOps.csproj" />
+    <Project Path="src/Atlas.Connector.Git/Atlas.Connector.Git.csproj" />
+    <Project Path="src/Atlas.Connector.GitHub/Atlas.Connector.GitHub.csproj" />
+    <Project Path="src/Atlas.Connector.GitLab/Atlas.Connector.GitLab.csproj" />
+    <Project Path="src/Atlas.Connector.Local/Atlas.Connector.Local.csproj" />
+    <Project Path="src/Atlas.Connector.Upload/Atlas.Connector.Upload.csproj" />
+    <Project Path="src/Atlas.Contracts/Atlas.Contracts.csproj" />
+    <Project Path="src/Atlas.Domain/Atlas.Domain.csproj" />
+    <Project Path="src/Atlas.Infrastructure/Atlas.Infrastructure.csproj" />
+    <Project Path="src/Atlas.Language.Abstractions/Atlas.Language.Abstractions.csproj" />
+    <Project Path="src/Atlas.Language.CSharp/Atlas.Language.CSharp.csproj" />
+    <Project Path="src/Atlas.Language.Sql/Atlas.Language.Sql.csproj" />
+    <Project Path="src/Atlas.Language.VisualBasic/Atlas.Language.VisualBasic.csproj" />
+    <Project Path="src/Atlas.Language.Java/Atlas.Language.Java.csproj" />
+    <Project Path="src/Atlas.Reporting/Atlas.Reporting.csproj" />
+    <Project Path="src/Atlas.Scanner.Abstractions/Atlas.Scanner.Abstractions.csproj" />
+    <Project Path="src/Atlas.Scanner.Architecture/Atlas.Scanner.Architecture.csproj" />
+    <Project Path="src/Atlas.Scanner.Database/Atlas.Scanner.Database.csproj" />
+    <Project Path="src/Atlas.Scanner.Dependencies/Atlas.Scanner.Dependencies.csproj" />
+    <Project Path="src/Atlas.Scanner.Infrastructure/Atlas.Scanner.Infrastructure.csproj" />
+    <Project Path="src/Atlas.Scanner.JavaScript/Atlas.Scanner.JavaScript.csproj" />
+    <Project Path="src/Atlas.Scanner.Java/Atlas.Scanner.Java.csproj" />
+    <Project Path="src/Atlas.Scanner.Licenses/Atlas.Scanner.Licenses.csproj" />
+    <Project Path="src/Atlas.Scanner.Privacy/Atlas.Scanner.Privacy.csproj" />
+    <Project Path="src/Atlas.Scanner.Quality/Atlas.Scanner.Quality.csproj" />
+    <Project Path="src/Atlas.Scanner.Runtime/Atlas.Scanner.Runtime.csproj" />
+    <Project Path="src/Atlas.Scanner.Secrets/Atlas.Scanner.Secrets.csproj" />
+    <Project Path="src/Atlas.Scanner.Security/Atlas.Scanner.Security.csproj" />
+    <Project Path="src/Atlas.Worker/Atlas.Worker.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Atlas.Application.Tests/Atlas.Application.Tests.csproj" />
+    <Project Path="tests/Atlas.ArchitectureTests/Atlas.ArchitectureTests.csproj" />
+    <Project Path="tests/Atlas.Connector.Tests/Atlas.Connector.Tests.csproj" />
+    <Project Path="tests/Atlas.Domain.Tests/Atlas.Domain.Tests.csproj" />
+    <Project Path="tests/Atlas.IntegrationTests/Atlas.IntegrationTests.csproj" />
+    <Project Path="tests/Atlas.Language.Tests/Atlas.Language.Tests.csproj" />
+    <Project Path="tests/Atlas.Scanner.Tests/Atlas.Scanner.Tests.csproj" />
+  </Folder>
+</Solution>
