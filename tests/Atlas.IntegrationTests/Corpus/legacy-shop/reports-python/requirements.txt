@@ -1,0 +1,3 @@
+# legacy reporting sidecar (fictional)
+Django==1.11.29
+nose
