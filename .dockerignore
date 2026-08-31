@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+**/node_modules/
+spikes/
+docs/
+.git/
+.github/
+.env
+*.md
