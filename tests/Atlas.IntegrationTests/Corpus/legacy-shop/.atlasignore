@@ -1,0 +1,4 @@
+# Vendored copy of a third-party library: not the customer's code.
+vendor/
+# Generated designer files
+**/*.Designer.cs

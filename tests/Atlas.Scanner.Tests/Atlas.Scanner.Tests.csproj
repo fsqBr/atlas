@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Runtime\Atlas.Scanner.Runtime.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Dependencies\Atlas.Scanner.Dependencies.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Language.CSharp\Atlas.Language.CSharp.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Abstractions\Atlas.Scanner.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Secrets\Atlas.Scanner.Secrets.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Security\Atlas.Scanner.Security.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Quality\Atlas.Scanner.Quality.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.JavaScript\Atlas.Scanner.JavaScript.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Licenses\Atlas.Scanner.Licenses.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Privacy\Atlas.Scanner.Privacy.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Database\Atlas.Scanner.Database.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Infrastructure\Atlas.Scanner.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Architecture\Atlas.Scanner.Architecture.csproj" />
+  </ItemGroup>
+
+</Project>
