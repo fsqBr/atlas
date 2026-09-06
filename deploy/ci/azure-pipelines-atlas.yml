@@ -1,0 +1,106 @@
+# Azure DevOps template: Atlas assessment gate.
+# Usage (in the consuming pipeline):
+# resources:
+# repositories:
+# - repository: atlas
+# type: git
+# name: Platform/atlas
+# steps:
+# - template: deploy/ci/azure-pipelines-atlas.yml@atlas
+# parameters:
+# atlasUrl: $(ATLAS_URL)
+# atlasToken: $(ATLAS_TOKEN) # secret variable
+# kind: azure-devops
+# credential: ado-bot
+# failOn: High
+# minScore: 60
+parameters:
+  - name: atlasUrl
+    type: string
+  - name: atlasToken
+    type: string
+    default: ""
+  - name: atlasTenant
+    type: string
+    default: ""
+  - name: repositoryUrl
+    type: string
+    default: $(Build.Repository.Uri)
+  - name: branch
+    type: string
+    default: $(Build.SourceBranchName)
+  - name: kind
+    type: string
+    default: git
+  - name: credential
+    type: string
+    default: ""
+  - name: failOn
+    type: string
+    default: High
+  - name: minScore
+    type: string
+    default: ""
+  - name: sarifPath
+    type: string
+    default: $(Build.ArtifactStagingDirectory)/atlas.sarif
+  - name: timeoutSeconds
+    type: number
+    default: 1800
+  - name: postPrComment
+    type: boolean
+    default: true
+  - name: commentAi
+    type: boolean
+    default: false
+  - name: commentLang
+    type: string
+    default: en
+
+steps:
+  - task: PowerShell@2
+    displayName: Atlas assessment gate
+    name: atlas
+    inputs:
+      targetType: filePath
+      filePath: $(Build.SourcesDirectory)/deploy/ci/atlas-ci.ps1
+      pwsh: true
+      arguments: >-
+        -AtlasUrl "${{ parameters.atlasUrl }}"
+        -Token "${{ parameters.atlasToken }}"
+        -Tenant "${{ parameters.atlasTenant }}"
+        -RepoUrl "${{ parameters.repositoryUrl }}"
+        -Branch "${{ parameters.branch }}"
+        -Kind "${{ parameters.kind }}"
+        -Credential "${{ parameters.credential }}"
+        -FailOn "${{ parameters.failOn }}"
+        -MinScore "${{ parameters.minScore }}"
+        -Sarif "${{ parameters.sarifPath }}"
+        -TimeoutSeconds ${{ parameters.timeoutSeconds }}
+        -CommentPath "$(Build.ArtifactStagingDirectory)/atlas-pr-comment.md"
+        -CommentAi "${{ lower(parameters.commentAi) }}"
+        -Lang "${{ parameters.commentLang }}"
+
+  - task: PowerShell@2
+    displayName: Post Atlas comment on the pull request
+    condition: and(always(), eq(variables['Build.Reason'], 'PullRequest'), eq('${{ parameters.postPrComment }}', 'True'))
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken) # the build service needs "Contribute to pull requests" on the repository
+    inputs:
+      targetType: inline
+      pwsh: true
+      script: |
+        $file = "$(Build.ArtifactStagingDirectory)/atlas-pr-comment.md"
+        if (-not (Test-Path $file)) { Write-Host "no comment file produced"; exit 0 }
+        $body = Get-Content $file -Raw
+        $url = "$(System.CollectionUri)$(System.TeamProject)/_apis/git/repositories/$(Build.Repository.ID)/pullRequests/$(System.PullRequest.PullRequestId)/threads?api-version=7.0"
+        $payload = @{ comments = @(@{ parentCommentId = 0; content = $body; commentType = 1 }); status = 1 } | ConvertTo-Json -Depth 5
+        Invoke-RestMethod -Method Post -Uri $url -Headers @{ Authorization = "Bearer $env:SYSTEM_ACCESSTOKEN" } -ContentType "application/json" -Body $payload | Out-Null
+        Write-Host "▸ Atlas comment posted on PR $(System.PullRequest.PullRequestId)"
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Atlas SARIF
+    condition: always()
+    inputs:
+      pathToPublish: ${{ parameters.sarifPath }}
+      artifactName: CodeAnalysisLogs # picked up by the SARIF SAST Scans Tab extension
