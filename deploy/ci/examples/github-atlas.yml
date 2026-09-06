@@ -1,0 +1,37 @@
+# Example workflow for a repository assessed by Atlas.
+# Copy to .github/workflows/atlas.yml in the repository you want to gate.
+name: Atlas
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 3 * * 1" # weekly, Monday 03:00 UTC
+
+permissions:
+  contents: read
+  security-events: write # for the SARIF upload
+
+jobs:
+  atlas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Atlas assessment gate
+        id: atlas
+        # Reference the action from the Atlas repository (or vendor deploy/ci/atlas-ci.sh into this repo).
+        uses: your-org/atlas/.github/actions/atlas-scan@main
+        with:
+          atlas-url: ${{ vars.ATLAS_URL }}
+          atlas-token: ${{ secrets.ATLAS_TOKEN }}
+          credential: github-bot # Atlas credential able to clone this repo (omit for public repos)
+          fail-on: High
+          min-score: 60
+
+      - name: Upload SARIF to code scanning
+        if: always() && steps.atlas.outputs.sarif != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.atlas.outputs.sarif }}
+          category: atlas

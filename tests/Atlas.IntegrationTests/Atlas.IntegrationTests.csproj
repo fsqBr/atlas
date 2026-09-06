@@ -1,0 +1,56 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.11" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="4.14.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Corpus\**" />
+    <None Remove="Corpus\**" />
+    <Content Include="Corpus\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Corpus\**\.atlasignore" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Atlas.Infrastructure\Atlas.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Api\Atlas.Api.csproj" Aliases="global,AtlasApi" />
+    <ProjectReference Include="..\..\src\Atlas.Worker\Atlas.Worker.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Application\Atlas.Application.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Connector.Local\Atlas.Connector.Local.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Connector.Git\Atlas.Connector.Git.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Language.CSharp\Atlas.Language.CSharp.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Language.Sql\Atlas.Language.Sql.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Language.VisualBasic\Atlas.Language.VisualBasic.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Dependencies\Atlas.Scanner.Dependencies.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Runtime\Atlas.Scanner.Runtime.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Secrets\Atlas.Scanner.Secrets.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Security\Atlas.Scanner.Security.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Reporting\Atlas.Reporting.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Quality\Atlas.Scanner.Quality.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.JavaScript\Atlas.Scanner.JavaScript.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Licenses\Atlas.Scanner.Licenses.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Privacy\Atlas.Scanner.Privacy.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Database\Atlas.Scanner.Database.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Infrastructure\Atlas.Scanner.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Scanner.Architecture\Atlas.Scanner.Architecture.csproj" />
+  </ItemGroup>
+
+</Project>
