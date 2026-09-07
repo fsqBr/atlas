@@ -1,0 +1,276 @@
+{
+  "RuleVersions": {
+    "ai.agent.framework": "1.0.0",
+    "ai.inventory": "1.0.0",
+    "ai.local-runtime": "1.0.0",
+    "ai.mcp.remote-server": "1.0.0",
+    "ai.mcp.secret-in-config": "1.0.0",
+    "ai.mcp.server": "1.0.0",
+    "ai.model.retired": "1.0.0",
+    "ai.provider.direct-endpoint": "1.0.0",
+    "ai.provider.sdk": "1.0.0",
+    "ai.unapproved-provider": "1.0.0",
+    "architecture.coupling.high-fan-out": "1.0.0",
+    "architecture.cycle.namespace": "1.0.0",
+    "architecture.cycle.project": "1.0.0",
+    "architecture.hotspot": "1.0.0",
+    "architecture.hotspot.change": "1.0.0",
+    "architecture.knowledge-silo": "1.0.0",
+    "database.complex-routine": "1.0.0",
+    "database.dynamic-sql": "1.0.0",
+    "database.edmx-model": "1.0.0",
+    "database.inventory": "1.0.0",
+    "database.linq-to-sql": "1.0.0",
+    "database.logic-in-procedures": "1.0.0",
+    "database.pii-column": "1.0.0",
+    "database.trigger": "1.0.0",
+    "database.unversioned-schema": "1.0.0",
+    "dependency.framework.end-of-life": "1.0.0",
+    "dependency.framework.ending-soon": "1.0.0",
+    "dependency.framework.legacy": "1.0.0",
+    "dependency.framework.unknown": "1.0.0",
+    "dependency.migration-blocker.mb-001": "1.0.0",
+    "dependency.migration-blocker.mb-002": "1.0.0",
+    "dependency.migration-blocker.mb-003": "1.0.0",
+    "dependency.migration-blocker.mb-004": "1.0.0",
+    "dependency.migration-blocker.mb-005": "1.0.0",
+    "dependency.migration-blocker.mb-006": "1.0.0",
+    "dependency.migration-blocker.mb-007": "1.0.0",
+    "dependency.migration-blocker.mb-008": "1.0.0",
+    "dependency.migration-blocker.mb-009": "1.0.0",
+    "dependency.migration-blocker.mb-010": "1.0.0",
+    "dependency.migration-blocker.mb-011": "1.0.0",
+    "dependency.migration-blocker.mb-012": "1.0.0",
+    "dependency.migration-blocker.mb-013": "1.0.0",
+    "dependency.npm.inventory": "1.0.0",
+    "dependency.package.version-conflict": "1.0.0",
+    "dependency.package.vulnerable": "1.0.0",
+    "dependency.project-reference.unresolved": "1.0.0",
+    "infra.appsettings.detailed-errors": "1.0.0",
+    "infra.appsettings.verbose-logging": "1.0.0",
+    "infra.compose.docker-socket": "1.0.0",
+    "infra.compose.host-network": "1.0.0",
+    "infra.compose.privileged": "1.0.0",
+    "infra.docker.eol-base": "1.0.0",
+    "infra.docker.root-user": "1.0.0",
+    "infra.docker.secret-in-env": "1.0.0",
+    "infra.docker.unpinned-base": "1.0.0",
+    "java.inventory": "1.0.0",
+    "java.javax-namespace": "1.0.0",
+    "java.jdk.eol": "1.0.0",
+    "java.legacy-framework": "1.0.0",
+    "java.vulnerable-dependency": "1.0.0",
+    "javascript.dom-injection": "1.0.0",
+    "javascript.eval": "1.0.0",
+    "javascript.insecure-url": "1.0.0",
+    "javascript.inventory": "1.0.0",
+    "javascript.legacy-framework": "1.0.0",
+    "license.denied": "1.0.0",
+    "license.inventory": "1.0.0",
+    "license.restricted": "1.0.0",
+    "license.strong-copyleft": "1.0.0",
+    "license.unknown": "1.0.0",
+    "license.weak-copyleft": "1.0.0",
+    "privacy.leak.exception": "1.1.0",
+    "privacy.leak.log": "1.1.0",
+    "privacy.pii.birth": "1.1.0",
+    "privacy.pii.contact": "1.1.0",
+    "privacy.pii.credential": "1.1.0",
+    "privacy.pii.financial": "1.1.0",
+    "privacy.pii.health": "1.1.0",
+    "privacy.pii.identifier": "1.1.0",
+    "python.interpreter.eol": "1.0.0",
+    "python.inventory": "1.0.0",
+    "python.legacy-framework": "1.0.0",
+    "python.vulnerable-dependency": "1.0.0",
+    "quality.api.legacy": "1.0.0",
+    "quality.api.obsolete": "1.0.0",
+    "quality.complexity.method": "1.0.0",
+    "quality.coverage.low": "1.0.0",
+    "quality.coverage.no-data": "1.0.0",
+    "quality.coverage.summary": "1.0.0",
+    "quality.deadcode.member": "1.0.0",
+    "quality.deadcode.type": "1.0.0",
+    "quality.duplication.block": "1.0.0",
+    "quality.file.large": "1.0.0",
+    "quality.file.syntax-error": "1.0.0",
+    "quality.tests.none": "1.0.0",
+    "quality.tests.project-uncovered": "1.0.0",
+    "sec.config.cookies-not-httponly": "1.0.0",
+    "sec.config.custom-errors-off": "1.0.0",
+    "sec.config.debug-enabled": "1.0.0",
+    "sec.config.trace-enabled": "1.0.0",
+    "sec.crypto.weak-cipher": "1.0.0",
+    "sec.crypto.weak-hash": "1.0.0",
+    "sec.deserialization.binaryformatter": "1.0.0",
+    "sec.deserialization.typenamehandling": "1.0.0",
+    "sec.process.command-concatenation": "1.0.0",
+    "sec.sql.string-concatenation": "1.0.0",
+    "sec.tls.certificate-validation-disabled": "1.0.0",
+    "sec.tls.legacy-protocol": "1.0.0",
+    "sec.web.request-validation-disabled": "1.0.0",
+    "sec.xml.dtd-processing": "1.0.0",
+    "secrets.anthropic-api-key": "2026.08.0",
+    "secrets.aws-access-key": "2026.08.0",
+    "secrets.azure-storage-key": "2026.08.0",
+    "secrets.connection-string-password": "2026.08.0",
+    "secrets.generic-assignment": "2026.08.0",
+    "secrets.generic-assignment-unquoted": "2026.08.0",
+    "secrets.github-token": "2026.08.0",
+    "secrets.gitlab-token": "2026.08.0",
+    "secrets.google-api-key": "2026.08.0",
+    "secrets.jwt": "2026.08.0",
+    "secrets.key-file": "2026.08.0",
+    "secrets.npm-token": "2026.08.0",
+    "secrets.openai-api-key": "2026.08.0",
+    "secrets.private-key": "2026.08.0",
+    "secrets.slack-token": "2026.08.0",
+    "secrets.stripe-live-key": "2026.08.0"
+  },
+  "Fingerprints": {
+    "database.inventory": [
+      "5d7296aa26ab7c2fff5327e2e9ef119ed7d1d6a4dab0fb7d63a90ca50316fbc7"
+    ],
+    "database.pii-column": [
+      "6705c593ea49e4abcf00f3dfdc390866dcce00037d869790deea57def66409e3",
+      "b1911af9a9e25ca938cda456532ff50f220b0c62a1a72e191b7beb04ca5d214f",
+      "b7a88e1e0552516bfb2d987871882dd30234f2efc7b06bf305c587ee14259899"
+    ],
+    "database.trigger": [
+      "c4eb604e3b9641e96cd06bdd25d8cbaee886bc8c501f0cc1a67d4d1c97f1507d"
+    ],
+    "database.unversioned-schema": [
+      "9d3355b84792ae3e4f7670c0199427f4364417d6b1141963d0fd5debf1047774"
+    ],
+    "dependency.framework.end-of-life": [
+      "825ca38a4cf992019c572722e130e28837a9dffc0279fb0f52639d491cc016ac"
+    ],
+    "dependency.migration-blocker.mb-001": [
+      "1e045af4f778ec08b78ed13102e0918d3fb4cb315be6b53d0ce41d3c7cd21c84"
+    ],
+    "dependency.migration-blocker.mb-002": [
+      "e8a5e6afe063bd36c466c919841c7f0feecf1a984d3de6ca7d3b4d9d78d299be"
+    ],
+    "dependency.migration-blocker.mb-003": [
+      "2eb5ce6a13f159cabe9def36ba03ba067a1f9ae22c0ae34ea9e0fae8ab64a162"
+    ],
+    "dependency.migration-blocker.mb-004": [
+      "23ea326db74a5ab9f4bb911ec2225464aff02e9d97de86e44a7af1ea98c6450f"
+    ],
+    "dependency.migration-blocker.mb-006": [
+      "0e4b80009d26169d11f1fbd27def4ab485e1de75ee10024cd7c3da0566d269c6"
+    ],
+    "dependency.migration-blocker.mb-007": [
+      "de5c54bc89e176a87c9b15a22ee2a31b89cfa7cd18b998eea3cf5c83b1b5ed8d"
+    ],
+    "dependency.npm.inventory": [
+      "467e5cc6d0e1157b51bc6616786312e9af77f5f389174e847287fdc5975d0d11"
+    ],
+    "infra.docker.eol-base": [
+      "086fc73fd4a923e80f898bc4904b792e1990c6f0e937c1c558a9ec2f43efda86"
+    ],
+    "infra.docker.root-user": [
+      "9e10578714c13c5aa56f6584ff416ad339ad64fbca35a0ef8bfb8593665e2dad"
+    ],
+    "infra.docker.secret-in-env": [
+      "7b52b7e4c2a915830ae1695423b515bfa8c740fac168ca8c342b5e5ecf9eb45d"
+    ],
+    "java.inventory": [
+      "16edea60e035185919256235850f8971616d43c7647c9f5b507b8bd3e1aac278"
+    ],
+    "java.javax-namespace": [
+      "9b346467c065ad788d1cfb60e2c2641c7ff96bbc1be04393d0644155f0440314"
+    ],
+    "java.jdk.eol": [
+      "3f6c47d9bb44524dd30f92255031ec928895388a966bac6f405b239c20c3fd0f"
+    ],
+    "java.legacy-framework": [
+      "b85ac11963e4422fd4efa06544c2f006cf5eacd185959e8ef8bb342dc79ded71"
+    ],
+    "license.inventory": [
+      "1db7772ebcd01b87eb8494fd6157d3c600af48fd4bbadcd5c7ee34f89c3d6032"
+    ],
+    "license.unknown": [
+      "0ad911bf909ccab426cb9bf56e7ad2678d732632d266eddf271e2ea6b8ea7a7c"
+    ],
+    "privacy.leak.exception": [
+      "224053353d5a5c7f9314aeef4f6aa56ffcc590a8ed026d9d7a070bd4deff01cc"
+    ],
+    "privacy.leak.log": [
+      "d8bc8a37eb38957ab7f31885df2a00ffb23a30e32382fb168eb99eb74ae75874"
+    ],
+    "privacy.pii.birth": [
+      "1293a63bc5cedce0a3e45cb09f517ec15c1ca70d03e66920d68e779f14c06fa0"
+    ],
+    "privacy.pii.contact": [
+      "28bd890e44acb63fbf40087a34d241154930648670f713556f00774ef04179b2"
+    ],
+    "privacy.pii.credential": [
+      "f7ba2a1424e5f1f6d21a89200435d70a682a2ad35dbd3b3d7c32f12ac237a1bf"
+    ],
+    "privacy.pii.financial": [
+      "267350dffc84e2e8dd319c05a29f39c14dcee2aa931047edde3b8b1091bc468f"
+    ],
+    "privacy.pii.identifier": [
+      "6844adc997e70a54c1d90cccfbc05e31430b7592f91eafefe5c447bdbadd7d00"
+    ],
+    "python.interpreter.eol": [
+      "8f2dcbdb1cbd3eaffe1d9e57638dcbd3bb56af7739b0947b2e137c6f865fe2ad"
+    ],
+    "python.inventory": [
+      "3062a07040c5b0dc29011429796aa90b0baab5e3cecc6aae555f02d321cb954b"
+    ],
+    "python.legacy-framework": [
+      "8fcb8405b226dfbd73957977cfd9fe89a02ec522dfa79cbfc3e4aad5b70ac41a",
+      "fdb7506af97d77533f46e8e220c95cec056735845990d8a274c49920ef73c564"
+    ],
+    "quality.api.legacy": [
+      "10558136e8b8ce72b41b50eb35951bc5a1ffe86ac9406e3f995385544c676a75",
+      "799ce16385f00df7882d223cf8fabf1f53aaa064e0a73749c6fd05a1a6a8e411",
+      "be7cf0f5d6f1d78388fcd07f46de0cbdac09d51bcd20d928bbdd59ce0362ab05",
+      "e3fc6a2ec9a7b335616391e77e1974ed0962d342168bf162fa57efc028d06c02"
+    ],
+    "quality.complexity.method": [
+      "c355bbca027db1d32c8fcbdad964e58beab8b15c28e7658cc9f2344cee1a078a",
+      "f95ea0ad3078d69eee6f654e387041d28f35526269658a7170f085abb5dd0294"
+    ],
+    "quality.coverage.no-data": [
+      "39364447cf24d05a91c1c012d97e644a8c6340644a01e4ff1d187c56c25c5923"
+    ],
+    "quality.deadcode.member": [
+      "338d54a9f7d18e17a650ab7d595fafacef7d743d5fc47a88a94707354f764692"
+    ],
+    "quality.deadcode.type": [
+      "7ecee57bfb2b9d9ac851d8d04d3422ce983bd834e407d65343973b6f106f6c9f"
+    ],
+    "quality.duplication.block": [
+      "40c6546161d250bd74aab4ae78dd97313ff106122af52d5df91117f47c030269",
+      "b1b35bea9265512fcf5d0b9070d71a0d322955a2a866aad2b2050d0dff28fc90"
+    ],
+    "quality.tests.none": [
+      "25855ff6d2c96fb28c8682a8f3a6e382516e3495d3b0ca644c5a70314f76fd45"
+    ],
+    "sec.config.cookies-not-httponly": [
+      "b945d3558932aebd0d73b0dd928b434dc81db2302439faea8885b448c6f6d5ed"
+    ],
+    "sec.config.custom-errors-off": [
+      "6e1fee96ec7f8c730636b810ce7ece4eebb329ecba3fbba3be09d36c299de6e5"
+    ],
+    "sec.config.debug-enabled": [
+      "8a03b9eb981cdf93191b75720150323e090b4c572626e8cd6bff8ecc6069d690"
+    ],
+    "sec.crypto.weak-hash": [
+      "11c9dcaea57d11aa62b7929e00dd8c3ca21da918dc3b3e1b45d137f0eb1fbc79",
+      "5356b18f2fd956a005a1db729dca44587fef6e6e3923dd81a8526f97782ef373",
+      "db38571903a7b9a48b429a3fcfa378fe88a9967d58a966e2a5bc7fc3dc452a00"
+    ],
+    "sec.sql.string-concatenation": [
+      "26233aea5fb51be90df07253b92b2ee49dd42bb4b6c01806d55e96f42020f116",
+      "b7e59fc1512c33f24bf5a1d8ab58697bd8a39f23b28893cb1f7fe4514d9a8d2a",
+      "d13c01b543b5d605453290c3ab83dbbf14dc22a84291dd910f2220118d22f956"
+    ],
+    "secrets.connection-string-password": [
+      "ee6db5b39709e632717ab624a0e8be96f3e818e4154d1ce83bb2f323f5a30fbb"
+    ]
+  }
+}
