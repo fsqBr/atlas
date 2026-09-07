@@ -1,0 +1,59 @@
+# GitLab CI template: Atlas assessment gate + merge-request comment.
+#
+# Usage (in the assessed repository's .gitlab-ci.yml):
+# include:
+# - remote: "https://raw.githubusercontent.com/fsqBr/atlas/main/deploy/ci/gitlab-atlas.yml"
+# atlas:
+# variables:
+# ATLAS_URL: "https://atlas.example.com"
+# ATLAS_FAIL_ON: "High"
+# ATLAS_MIN_SCORE: "60"
+#
+# CI/CD variables (Settings → CI/CD → Variables):
+# ATLAS_URL Atlas API base URL [required]
+# ATLAS_TOKEN Atlas API token (atlas_pat_…) when authentication is on [optional, masked]
+# ATLAS_CREDENTIAL Atlas credential name able to clone this repository [optional]
+# ATLAS_GITLAB_TOKEN Project access token with `api` scope — posts/updates the
+# MR comment; without it the comment is only kept as artifact [optional, masked]
+# ATLAS_PR_AI "true" adds the AI reviewer note to the comment [optional]
+
+atlas:
+  image: alpine:3.20
+  variables:
+    ATLAS_KIND: gitlab
+    ATLAS_REPO_URL: $CI_PROJECT_PATH
+    ATLAS_BRANCH: $CI_COMMIT_REF_NAME
+    ATLAS_SARIF: atlas.sarif
+    ATLAS_PR_COMMENT: atlas-pr-comment.md
+    ATLAS_LANG: en
+    GIT_STRATEGY: none # Atlas clones the repository itself through its GitLab connector
+  before_script:
+    - apk add --no-cache bash curl jq git
+    - curl -fsSL -o atlas-ci.sh "https://raw.githubusercontent.com/fsqBr/atlas/main/deploy/ci/atlas-ci.sh"
+  script:
+    - bash atlas-ci.sh
+  after_script:
+    - |
+      # Post (or update) the Atlas comment on the merge request, when this is an MR pipeline and a token is available.
+      [ -f "$ATLAS_PR_COMMENT" ] || exit 0
+      [ -n "$CI_MERGE_REQUEST_IID" ] && [ -n "$ATLAS_GITLAB_TOKEN" ] || { echo "MR comment kept as artifact only"; exit 0; }
+      api="$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes"
+      marker='<!-- atlas-pr-comment -->'
+      body=$(cat "$ATLAS_PR_COMMENT")
+      existing=$(curl -fsS --header "PRIVATE-TOKEN: $ATLAS_GITLAB_TOKEN" "$api?per_page=100" \
+        | jq -r --arg m "$marker" '[.[] | select(.body | startswith($m))][0].id // empty')
+      if [ -n "$existing" ]; then
+        curl -fsS -o /dev/null --request PUT --header "PRIVATE-TOKEN: $ATLAS_GITLAB_TOKEN" \
+          --data-urlencode "body=$body" "$api/$existing" && echo "Atlas comment updated"
+      else
+        curl -fsS -o /dev/null --request POST --header "PRIVATE-TOKEN: $ATLAS_GITLAB_TOKEN" \
+          --data-urlencode "body=$body" "$api" && echo "Atlas comment posted"
+      fi
+  artifacts:
+    when: always
+    paths:
+      - atlas.sarif
+      - atlas-pr-comment.md
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
