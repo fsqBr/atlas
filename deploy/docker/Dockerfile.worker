@@ -1,0 +1,18 @@
+# Tier 2 (dotnet restore inside the scan) needs the SDK: build with --build-arg ATLAS_WORKER_BASE=mcr.microsoft.com/dotnet/sdk:10.0
+# (ARGs used in FROM must be declared before the first stage.)
+ARG ATLAS_WORKER_BASE=mcr.microsoft.com/dotnet/runtime:10.0
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY . .
+RUN dotnet publish src/Atlas.Worker -c Release -o /app/publish
+
+FROM ${ATLAS_WORKER_BASE} AS final
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY --from=build /app/publish .
+# Clone workspaces live on a dedicated volume owned by the app user (root filesystem is read-only at runtime).
+RUN mkdir -p /var/atlas/workspaces && chown app:app /var/atlas/workspaces
+USER app
+ENTRYPOINT ["dotnet", "Atlas.Worker.dll"]
