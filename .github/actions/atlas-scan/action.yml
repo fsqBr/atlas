@@ -1,0 +1,113 @@
+name: "Atlas assessment gate"
+description: "Runs an Atlas assessment for this repository, exports SARIF and fails the job on the configured quality gate."
+branding:
+  icon: "shield"
+  color: "green"
+inputs:
+  atlas-url:
+    description: "Atlas API base URL (e.g. https://atlas.example.com)"
+    required: true
+  atlas-token:
+    description: "Bearer token for Atlas when OIDC is enabled"
+    required: false
+  atlas-tenant:
+    description: "Tenant external key (only for installations without authentication)"
+    required: false
+  repository-url:
+    description: "Git URL Atlas can clone (defaults to this repository)"
+    required: false
+    default: "${{ github.server_url }}/${{ github.repository }}.git"
+  branch:
+    description: "Branch to assess"
+    required: false
+    default: "${{ github.ref_name }}"
+  kind:
+    description: "Source kind: git, github, azure-devops or gitlab"
+    required: false
+    default: "git"
+  credential:
+    description: "Name of a credential stored in Atlas for private repositories"
+    required: false
+  fail-on:
+    description: "Fail when open findings at or above this severity exist (Critical, High, Medium, Low)"
+    required: false
+    default: "High"
+  min-score:
+    description: "Fail when the health score is below this value"
+    required: false
+  sarif-path:
+    description: "Where to write the SARIF file"
+    required: false
+    default: "atlas.sarif"
+  timeout:
+    description: "Seconds to wait for the run"
+    required: false
+    default: "1800"
+  pr-comment:
+    description: "Post (or update) the Atlas comment on the pull request"
+    required: false
+    default: "true"
+  pr-comment-ai:
+    description: "Add a short AI-written paragraph to the comment (requires a configured AI provider in Atlas)"
+    required: false
+    default: "false"
+  lang:
+    description: "Comment language: en or pt-BR"
+    required: false
+    default: "en"
+  github-token:
+    description: "Token used to post the comment (needs pull-requests: write)"
+    required: false
+    default: ${{ github.token }}
+outputs:
+  assessment-id:
+    description: "Atlas assessment id"
+    value: ${{ steps.gate.outputs.assessment-id }}
+  score:
+    description: "Health score after the run"
+    value: ${{ steps.gate.outputs.score }}
+  passed:
+    description: "true when the gate passed"
+    value: ${{ steps.gate.outputs.passed }}
+  sarif:
+    description: "Path of the SARIF file"
+    value: ${{ steps.gate.outputs.sarif }}
+  comment:
+    description: "Path of the pull-request comment (Markdown)"
+    value: ${{ steps.gate.outputs.comment }}
+runs:
+  using: "composite"
+  steps:
+    - id: gate
+      shell: bash
+      env:
+        ATLAS_URL: ${{ inputs.atlas-url }}
+        ATLAS_TOKEN: ${{ inputs.atlas-token }}
+        ATLAS_TENANT: ${{ inputs.atlas-tenant }}
+        ATLAS_REPO_URL: ${{ inputs.repository-url }}
+        ATLAS_BRANCH: ${{ inputs.branch }}
+        ATLAS_KIND: ${{ inputs.kind }}
+        ATLAS_CREDENTIAL: ${{ inputs.credential }}
+        ATLAS_FAIL_ON: ${{ inputs.fail-on }}
+        ATLAS_MIN_SCORE: ${{ inputs.min-score }}
+        ATLAS_SARIF: ${{ inputs.sarif-path }}
+        ATLAS_TIMEOUT: ${{ inputs.timeout }}
+        ATLAS_PR_COMMENT: ${{ inputs.pr-comment == 'true' && 'atlas-pr-comment.md' || '' }}
+        ATLAS_PR_AI: ${{ inputs.pr-comment-ai }}
+        ATLAS_LANG: ${{ inputs.lang }}
+      run: bash "${{ github.action_path }}/../../../deploy/ci/atlas-ci.sh"
+    - id: comment
+      if: always() && inputs.pr-comment == 'true' && github.event_name == 'pull_request'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+      run: |
+        [[ -f atlas-pr-comment.md ]] || { echo "no comment file produced"; exit 0; }
+        marker='<!-- atlas-pr-comment -->'
+        existing=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate --jq ".[] | select(.body | startswith(\"${marker}\")) | .id" | head -n1)
+        if [[ -n "$existing" ]]; then
+          gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${existing}" -F body=@atlas-pr-comment.md >/dev/null && echo "▸ Atlas comment updated"
+        else
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" -F body=@atlas-pr-comment.md >/dev/null && echo "▸ Atlas comment posted"
+        fi
