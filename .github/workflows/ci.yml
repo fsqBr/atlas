@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+          dotnet-quality: preview
+
+      - name: Restore
+        run: dotnet restore Atlas.slnx
+
+      - name: Build
+        run: dotnet build Atlas.slnx --no-restore -c Release
+
+      - name: Test (unit + architecture)
+        run: dotnet test Atlas.slnx --no-build -c Release --logger "trx" --results-directory TestResults
+
+      - name: Annotate failing tests
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          ns = {"t": "http://microsoft.com/schemas/VisualStudio/TeamTest/2010"}
+          for path in glob.glob("TestResults/*.trx"):
+              for r in ET.parse(path).getroot().iter("{%s}UnitTestResult" % ns["t"]):
+                  if r.get("outcome") != "Failed":
+                      continue
+                  message = r.find(".//t:Message", ns)
+                  text = " ".join((message.text or "").split())[:900] if message is not None else "(no message)"
+                  print(f"::error title={r.get('testName')}::{text}")
+          PY
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/Atlas.Web/package-lock.json
+      - name: Install
+        run: npm ci
+        working-directory: src/Atlas.Web
+      - name: Web tests
+        run: npm test
+        working-directory: src/Atlas.Web
+      - name: Build
+        run: npm run build
+        working-directory: src/Atlas.Web
+
+  # Browser smoke against the real stack (compose build → postgres, minio, pdf, api, worker, web) with Playwright.
+  # Catches what unit tests cannot: routing, the nginx shell/asset caching, the API proxy, pages that fail to render.
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [build-and-test, web]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compose env
+        run: |
+          cat > .env <<'EOF'
+          ATLAS_DB_PASSWORD=ci-postgres-pass
+          ATLAS_MINIO_PASSWORD=ci-minio-pass
+          ATLAS_SECRETS_HMAC_KEY=Y2ktaG1hYy1rZXktMzItYnl0ZXMtcGxhY2Vob2xkZXI=
+          ATLAS_MASTER_KEY=Y2ktbWFzdGVyLWtleS0zMi1ieXRlcy1wbGFjZWhvbGQ=
+          ATLAS_LOCAL_SOURCES=./tests/Atlas.IntegrationTests/Corpus
+          ATLAS_LOCAL_SOURCES_2=./tests/Atlas.IntegrationTests/Corpus
+          ATLAS_LOCAL_SOURCES_3=./tests/Atlas.IntegrationTests/Corpus
+          EOF
+      - name: Build and start the stack
+        run: |
+          docker compose up -d --build atlas-postgres atlas-object-storage atlas-pdf atlas-api atlas-worker atlas-web
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:3000/api/version >/dev/null 2>&1; then echo "stack ready"; break; fi
+            sleep 3
+          done
+          curl -fsS http://localhost:3000/api/version
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/Atlas.Web/package-lock.json
+      - name: Install Playwright
+        run: npm ci && npx playwright install --with-deps chromium
+        working-directory: src/Atlas.Web
+      - name: Browser smoke
+        run: npx playwright test
+        working-directory: src/Atlas.Web
+        env:
+          BASE_URL: http://localhost:3000
+          CI: "true"
+      - name: Stack logs on failure
+        if: failure()
+        run: docker compose logs --no-color --tail=200 atlas-api atlas-worker atlas-web
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: src/Atlas.Web/playwright-report
+          retention-days: 7

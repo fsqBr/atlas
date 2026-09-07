@@ -1,0 +1,31 @@
+# Dependency update signals for the public mirror.
+#
+# This repository is published as snapshots (a fresh commit per release), so Dependabot pull requests are not merged
+# here: they act as an early-warning list. The bumps are applied upstream and arrive in the next snapshot — closing a
+# PR as "applied" is expected. Security advisories still alert normally.
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      nuget-all:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: "/src/Atlas.Web"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      npm-all:
+        patterns: ["*"]
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: "/deploy/docker"
+    schedule:
+      interval: weekly
