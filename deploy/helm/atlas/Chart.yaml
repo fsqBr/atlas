@@ -1,0 +1,12 @@
+apiVersion: v2
+name: atlas
+description: Atlas — Enterprise Software Intelligence for .NET estates (API, worker, web UI, PDF sidecar; optional bundled PostgreSQL and MinIO).
+type: application
+version: 0.20.0
+appVersion: "0.20.0"
+keywords: [dotnet, modernization, assessment, code-analysis]
+home: https://github.com/your-org/atlas
+sources:
+  - https://github.com/your-org/atlas
+maintainers:
+  - name: Atlas team

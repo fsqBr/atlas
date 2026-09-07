@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The opt-in developer CLI ("CLI first, never a silent service"): reads the AI tool usage logs
+       already on the developer's machine, shows exactly what it will send, and posts daily aggregates only.
+       Publish self-contained: dotnet publish src/Atlas.Agent -c Release -r win-x64 -p:PublishSingleFile=true -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>atlas-agent</AssemblyName>
+    <RootNamespace>Atlas.Agent</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SelfContained>false</SelfContained>
+    <PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Atlas.Governance.Contracts\Atlas.Governance.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Atlas.Governance.Tests" />
+  </ItemGroup>
+
+</Project>

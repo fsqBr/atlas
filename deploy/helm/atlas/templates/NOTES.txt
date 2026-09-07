@@ -1,0 +1,13 @@
+Atlas {{ include "atlas.tag" . }} is being deployed as release "{{ .Release.Name }}" in namespace "{{ .Release.Namespace }}".
+
+Web UI ........ {{ if .Values.ingress.enabled }}https://{{ .Values.ingress.host }}{{ else }}kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "atlas.fullname" . }}-web 3000:80  →  http://localhost:3000{{ end }}
+API ........... svc/{{ include "atlas.fullname" . }}-api:8080  (health: /health/ready, metrics: /metrics)
+Database ...... {{ if .Values.postgresql.bundled }}bundled StatefulSet {{ include "atlas.fullname" . }}-postgres (pilot-grade; move to a managed instance for production){{ else }}external {{ .Values.postgresql.external.host }}{{ end }}
+Secrets ....... {{ include "atlas.secretName" . }} — back up masterKey: losing it loses stored credentials and the AI key.
+
+Storage notes:
+  * uploads and vulndata PVCs are ReadWriteMany (api writes, worker reads). Set persistence.storageClassRWX.
+  * Schema migrations run automatically on API start (api.autoMigrate).
+{{- if not .Values.auth.enabled }}
+  * Authentication is OFF. Set auth.enabled=true with your OIDC authority before exposing Atlas beyond a trusted network.
+{{- end }}

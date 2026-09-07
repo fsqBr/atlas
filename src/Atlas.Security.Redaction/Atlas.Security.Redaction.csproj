@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Shared secret-hygiene primitives. Deliberately dependency-free so every scanner,
+       the application layer and the governance module can use the same redaction and the same
+       keyed fingerprint without pulling each other in. -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Atlas.Application.Tests" />
+    <InternalsVisibleTo Include="Atlas.Scanner.Tests" />
+  </ItemGroup>
+
+</Project>
