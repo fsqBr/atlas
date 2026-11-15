@@ -3,7 +3,7 @@ WORKDIR /src
 COPY . .
 RUN dotnet publish src/Atlas.Api -c Release -o /app/publish
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:11.0 AS final
 # libgssapi: Npgsql probes it for GSS/Kerberos negotiation and prints a load error on every start without it.
 RUN apt-get update     && apt-get install -y --no-install-recommends libgssapi-krb5-2     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
