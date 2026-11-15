@@ -1,7 +1,7 @@
 # Tier 2 (dotnet restore inside the scan) needs the SDK: build with --build-arg ATLAS_WORKER_BASE=mcr.microsoft.com/dotnet/sdk:10.0
 # (ARGs used in FROM must be declared before the first stage.)
 ARG ATLAS_WORKER_BASE=mcr.microsoft.com/dotnet/runtime:10.0
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 WORKDIR /src
 COPY . .
 RUN dotnet publish src/Atlas.Worker -c Release -o /app/publish
